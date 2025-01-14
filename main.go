@@ -1,4 +1,4 @@
-package licensechecker
+package main
 
 import (
 	"flag"
@@ -24,11 +24,10 @@ var licenseText = `/********************************************************
 func main() {
 	pathFlag := flag.String("d", ".", "Path to the directory to check")
 	recursiveFlag := flag.Bool("r", false, "Check the directory recursively")
-	fileEndingsFlag := flag.String("e", "go", "Comma separated list of file endings to check")
+	fileEndingsFlag := flag.String("e", "", "Comma separated list of file endings to check")
 	scrapeLicenseFlag := flag.String("s", "", "URL to scrape the license from")
 	dryRunFlag := flag.Bool("v", false, "Perform a dry run to check which files would be checked")
 	flag.Parse()
-	println(*pathFlag, *recursiveFlag, *fileEndingsFlag, *scrapeLicenseFlag, *dryRunFlag)
 
 	fileTypes := strings.Split(*fileEndingsFlag, ",")
 	path, ok := processPath(*pathFlag)
@@ -51,8 +50,13 @@ func main() {
 	println(licenseText)
 	println("Changed ", len(changedFiles), " files")
 	println(strings.Join(changedFiles, "\n"))
+	println()
 	println("Failed to Change ", len(failedFiles), " files")
 	println(strings.Join(failedFiles, "\n"))
+	if *dryRunFlag {
+		println()
+		println("This was a dry run. No files were changed.")
+	}
 }
 
 func checkDirectory(path string, fileTypes []string, recursively bool, dryrun bool) ([]string, []string, error) {
