@@ -1,0 +1,19 @@
+== License Checker 1.0
+
+License Checker Tool to use in CI/CD or other automated tools that prepends a license text to source code files.
+
+== Usage
+
+Call this tool from the command line with the following arguments:
+
+- d: Specify path to the directory to check (Default: Current Directory)
+- r: Recursively check subdirectories (Default: false)
+- e: Comma-separated list of file endings to filter checked files by. Omit to check all files (Default: All Files)
+- s: URL to scrape the license text from. Omit to use a default text (Default: none)
+- v: Dry-Run, use to check which files would be changed without actually writing anything. (Default: false)
+
+== TODO
+
+- Replace Old License Texts
+- Read License Text from File
+- Actually test the thing lol
