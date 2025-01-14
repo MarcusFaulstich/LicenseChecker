@@ -1,6 +1,8 @@
 package main
 
 import (
+	_ "embed"
+	"errors"
 	"flag"
 	"io"
 	"net/http"
@@ -8,18 +10,8 @@ import (
 	"strings"
 )
 
-var licenseText = `/********************************************************
- *         Copyright (C) 2022-2024 AiVader GmbH         *
- *               - All Rights Reserved -                *
- *                                                      *
- * This file is part of the AiLuminos software project. *
- *                                                      *
- * Unauthorized copying or distribution of this file,   *
- * via any medium, is strictly prohibited.              *
- *                                                      *
- *             Proprietary and confidential             *
- ********************************************************/
- `
+//go:embed license_text
+var licenseText string
 
 func main() {
 	pathFlag := flag.String("d", ".", "Path to the directory to check")
@@ -27,6 +19,8 @@ func main() {
 	fileEndingsFlag := flag.String("e", "", "Comma separated list of file endings to check")
 	scrapeLicenseFlag := flag.String("s", "", "URL to scrape the license from")
 	dryRunFlag := flag.Bool("v", false, "Perform a dry run to check which files would be checked")
+	textFileFlag := flag.String("t", "", "Path to a text file containing the license text")
+	updateFlag := flag.Bool("u", false, "Update the license text")
 	flag.Parse()
 
 	fileTypes := strings.Split(*fileEndingsFlag, ",")
@@ -35,13 +29,13 @@ func main() {
 		println("Path not ok. Please enter a valid path.")
 		return
 	}
-	err := setLicenseText(*scrapeLicenseFlag)
+	err := setLicenseText(*scrapeLicenseFlag, *textFileFlag)
 	if err != nil {
-		println("Something went wrong scraping the license text.")
+		println("Something went wrong setting the license text.")
 		panic(err)
 	}
 
-	changedFiles, failedFiles, err := checkDirectory(path, fileTypes, *recursiveFlag, *dryRunFlag)
+	changedFiles, failedFiles, err := checkDirectory(path, fileTypes, *recursiveFlag, *dryRunFlag, *updateFlag)
 	if err != nil {
 		println("Something bad happened.")
 		println(err)
@@ -59,7 +53,7 @@ func main() {
 	}
 }
 
-func checkDirectory(path string, fileTypes []string, recursively bool, dryrun bool) ([]string, []string, error) {
+func checkDirectory(path string, fileTypes []string, recursively bool, dryrun bool, update bool) ([]string, []string, error) {
 	println("Checking Directory: ", path)
 	entries, err := os.ReadDir(path)
 	if err != nil {
@@ -72,7 +66,7 @@ func checkDirectory(path string, fileTypes []string, recursively bool, dryrun bo
 
 		if file.IsDir() {
 			if recursively {
-				changedFiles, failedFiles, err := checkDirectory(filePath, fileTypes, recursively, dryrun)
+				changedFiles, failedFiles, err := checkDirectory(filePath, fileTypes, recursively, dryrun, update)
 				if err == nil {
 					changedFileNames = append(changedFileNames, changedFiles...)
 					failedFileNames = append(failedFileNames, failedFiles...)
@@ -101,7 +95,7 @@ func checkDirectory(path string, fileTypes []string, recursively bool, dryrun bo
 			continue
 		}
 
-		newContent, exists := prependLicenseIfNot(content)
+		newContent, exists := addLicense(content, update)
 		if exists {
 			// If the license notifier already exists, don't add it
 			continue
@@ -127,12 +121,18 @@ func checkDirectory(path string, fileTypes []string, recursively bool, dryrun bo
 	return changedFileNames, failedFileNames, nil
 }
 
-func prependLicenseIfNot(content []byte) ([]byte, bool) {
+func addLicense(content []byte, update bool) ([]byte, bool) {
 	exists := strings.HasPrefix(string(content), licenseText)
 	if exists {
 		return content, exists
 	}
-	return append([]byte(licenseText), content...), false
+	if !update {
+		return append([]byte(licenseText), content...), false
+	}
+
+	license_end_marker := "********************************************************/\n"
+	contentNoLicense := strings.SplitN(string(content), license_end_marker, 2)[1]
+	return append([]byte(licenseText), []byte(contentNoLicense)...), false
 }
 
 func processPath(rawPath string) (string, bool) {
@@ -148,18 +148,27 @@ func processPath(rawPath string) (string, bool) {
 	return path, true
 }
 
-func setLicenseText(scrapeUrl string) error {
-	if scrapeUrl == "" {
-		return nil
+func setLicenseText(scrapeUrl string, filePath string) error {
+	if filePath != "" && scrapeUrl != "" {
+		return errors.New("Please provide either a file path or a scrape url")
 	}
-	res, err := http.Get(scrapeUrl)
-	if err != nil {
-		return err
+	if scrapeUrl != "" {
+
+		res, err := http.Get(scrapeUrl)
+		if err != nil {
+			return err
+		}
+		text, err := io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		licenseText = string(text)
+	} else if filePath != "" {
+		contents, err := os.ReadFile(filePath)
+		if err != nil {
+			return err
+		}
+		licenseText = string(contents)
 	}
-	text, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil
-	}
-	licenseText = string(text)
 	return nil
 }

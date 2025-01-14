@@ -11,8 +11,13 @@ Call this tool from the command line with the following arguments:
 - e: Comma-separated list of file endings to filter checked files by. Omit to check all files (Default: All Files)
 - s: URL to scrape the license text from. Omit to use a default text (Default: none)
 - v: Dry-Run, use to check which files would be changed without actually writing anything. (Default: false)
+- t: Specify a file to read the license text from. Omit to use a default text (Default: none)
+- u: Update the existing license text in all files files. (Default: false)
 
-== TODO
+=== Examples
 
-- Replace Old License Texts
-- Read License Text from File
+Check files in the src directory, recursively, and only for go and js files:
+``./licensechecker -d src/ -r -e go,js``
+
+Check all files in the current directory, only use go and js files, scrape the text from the gpl-3.0 license, in a dry-run:
+``./licensechecker -e go,js -s https://www.gnu.org/licenses/gpl-3.0.txt -v``
