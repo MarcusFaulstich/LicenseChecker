@@ -13,6 +13,7 @@ Call this tool from the command line with the following arguments:
 - v: Dry-Run, use to check which files would be changed without actually writing anything. (Default: false)
 - t: Specify a file to read the license text from. Omit to use a default text (Default: none)
 - u: Update the existing license text in all files files. (Default: false)
+- p: Purge the existing license text from files (Default: false)
 
 === Examples
 
