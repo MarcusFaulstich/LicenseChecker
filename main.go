@@ -65,6 +65,9 @@ func main() {
 
 func checkDirectory(path string, fileTypes []string) ([]string, []string, error) {
 	println("Checking Directory: ", path)
+	if !strings.HasSuffix(path, "/") {
+		path = path + "/"
+	}
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		return []string{}, []string{}, err
@@ -144,8 +147,8 @@ func addLicense(content []byte) ([]byte, bool) {
 		return append([]byte(licenseText), content...), false
 	}
 
-	license_end_marker := "********************************************************/\n"
-	splitContent := strings.SplitN(string(content), license_end_marker, 2)
+	licenseEndMarker := "********************************************************/\n"
+	splitContent := strings.SplitN(string(content), licenseEndMarker, 2)
 	if len(splitContent) < 2 {
 		return append([]byte(licenseText), content...), false
 	}
@@ -154,8 +157,8 @@ func addLicense(content []byte) ([]byte, bool) {
 }
 
 func purgeLicense(content []byte) ([]byte, bool) {
-	license_end_marker := "********************************************************/\n"
-	splitContent := strings.SplitN(string(content), license_end_marker, 2)
+	licenseEndMarker := "********************************************************/\n"
+	splitContent := strings.SplitN(string(content), licenseEndMarker, 2)
 	if len(splitContent) < 2 {
 		return content, false
 	}
